@@ -1,2 +1,5 @@
-# Federated-Learning-and-Split-Learning-with-raspberry-pi
-SRDS: End-to-End Evaluation of Federated Learning and Split Learning for Internet of Things
+# Ensemble-Learning
+This directory is for ensemble learning source code
+
+## information
+In this model, server has three models (4conv, 5conv, 6conv layers of 1D CNN models) for three clients
