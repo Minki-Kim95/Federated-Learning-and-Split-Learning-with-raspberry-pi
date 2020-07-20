@@ -8,11 +8,16 @@ federated_learning/ecg/ecg_fd.pth
 
 federated_learning/cifar10_MobileNet/cifar10_fd_mobile.pth
 
+federated_learning/cifar10_Resnet20/cifar10_fd_resnet20.pth
+
 split_learning/ecg/ecg_sp_server.pth
 split_learning/ecg/ecg_sp_client.pth
 
 split_learning/cifar10_Resnet20/cifar10_sp_resnet20_server.pth
 split_learning/cifar10_Resnet20/cifar10_sp_resnet20_client.pth
+
+split_learning/cifar10_MobileNet/cifar10_sp_mobilenet_server.pth
+split_learning/cifar10_MobileNet/cifar10_sp_mobilenet_client.pth
 
 ensemble_learning/ecg/ecg_es_model0.pth
 ensemble_learning/ecg/ecg_es_model1.pth

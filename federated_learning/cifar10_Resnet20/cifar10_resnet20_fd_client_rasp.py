@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # CIFAR10 Federated Mobilenet Client Side
-# This code is the server part of CIFAR10 federated mobilenet for **multi** client and a server.
+# # CIFAR10 Federated resnet20 Client Side
+# This code is the server part of CIFAR10 federated resnet20 for **multi** client and a server.
 
 # In[3]:
 
@@ -154,100 +154,98 @@ test_batch = len(test_loader)
 print(test_batch)
 
 
-# ## Pytorch layer modules for *Conv1D* Network
-# 
-# 
-# 
-# ### `Conv1d` layer
-# - `torch.nn.Conv1d(in_channels, out_channels, kernel_size)`
-# 
-# ### `MaxPool1d` layer
-# - `torch.nn.MaxPool1d(kernel_size, stride=None)`
-# - Parameter `stride` follows `kernel_size`.
-# 
-# ### `ReLU` layer
-# - `torch.nn.ReLU()`
-# 
-# ### `Linear` layer
-# - `torch.nn.Linear(in_features, out_features, bias=True)`
-# 
-# ### `Softmax` layer
-# - `torch.nn.Softmax(dim=None)`
-# - Parameter `dim` is usually set to `1`.
-# 
-# ## Construct 1D-CNN ECG classification model
+from torch.autograd import Variable
+import torch.nn.init as init
 
-# In[14]:
+def _weights_init(m):
+    classname = m.__class__.__name__
+    #print(classname)
+    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+        init.kaiming_normal_(m.weight)
+
+class LambdaLayer(nn.Module):
+    def __init__(self, lambd):
+        super(LambdaLayer, self).__init__()
+        self.lambd = lambd
+
+    def forward(self, x):
+        return self.lambd(x)
 
 
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov  1 14:23:31 2018
-@author: tshzzz
-"""
+class BasicBlock(nn.Module):
+    expansion = 1
 
-import torch
-import torch.nn as nn
+    def __init__(self, in_planes, planes, stride=1, option='A'):
+        super(BasicBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
 
-
-def conv_dw(inplane,outplane,stride=1):
-    return nn.Sequential(
-        nn.Conv2d(inplane,inplane,kernel_size = 3,groups = inplane,stride=stride,padding=1),
-        nn.BatchNorm2d(inplane),
-        nn.ReLU(),
-        nn.Conv2d(inplane,outplane,kernel_size = 1,groups = 1,stride=1),
-        nn.BatchNorm2d(outplane),
-        nn.ReLU()    
-        )
-
-def conv_bw(inplane,outplane,kernel_size = 3,stride=1):
-    return nn.Sequential(
-        nn.Conv2d(inplane,outplane,kernel_size = kernel_size,groups = 1,stride=stride,padding=1),
-        nn.BatchNorm2d(outplane),
-        nn.ReLU() 
-        )
-
-
-class MobileNet(nn.Module):
-    
-    def __init__(self,num_class=10):
-        super(MobileNet,self).__init__()
-        
-        layers = []
-        layers.append(conv_bw(3,32,3,1))
-        layers.append(conv_dw(32,64,1))
-        layers.append(conv_dw(64,128,2))
-        layers.append(conv_dw(128,128,1))
-        layers.append(conv_dw(128,256,2))
-        layers.append(conv_dw(256,256,1))
-        layers.append(conv_dw(256,512,2))
-
-        for i in range(5):
-            layers.append(conv_dw(512,512,1))
-        layers.append(conv_dw(512,1024,2))
-        layers.append(conv_dw(1024,1024,1))
-
-        self.classifer = nn.Sequential(
-                nn.Dropout(0.5),
-                nn.Linear(1024,num_class)
+        self.shortcut = nn.Sequential()
+        if stride != 1 or in_planes != planes:
+            if option == 'A':
+                """
+                For CIFAR10 ResNet paper uses option A.
+                """
+                self.shortcut = LambdaLayer(lambda x:
+                                            F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes//4, planes//4), "constant", 0))
+            elif option == 'B':
+                self.shortcut = nn.Sequential(
+                     nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                     nn.BatchNorm2d(self.expansion * planes)
                 )
-        self.feature = nn.Sequential(*layers)
-        
-        
 
-    def forward(self,x):
-        out = self.feature(x)
-        out = out.mean(3).mean(2)
-        out = out.view(-1,1024)
-        out = self.classifer(out)
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.shortcut(x)
+        out = F.relu(out)
         return out
 
+
+class ResNet(nn.Module):
+    def __init__(self, block, num_blocks, num_classes=10):
+        super(ResNet, self).__init__()
+        self.in_planes = 16
+
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
+        self.linear = nn.Linear(64, num_classes)
+
+        self.apply(_weights_init)
+
+    def _make_layer(self, block, planes, num_blocks, stride):
+        strides = [stride] + [1]*(num_blocks-1)
+        layers = []
+        for stride in strides:
+            layers.append(block(self.in_planes, planes, stride))
+            self.in_planes = planes * block.expansion
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        return out
+
+
+def resnet20():
+    return ResNet(BasicBlock, [3, 3, 3])
 
 # In[15]:
 
 
-ecg_net = MobileNet()
-ecg_net.to(device)
+res_net = resnet20()
+res_net.to(device)
 
 
 # In[16]:
@@ -255,7 +253,7 @@ ecg_net.to(device)
 
 lr = 0.001
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(ecg_net.parameters(), lr=lr, momentum=0.9)
+optimizer = optim.SGD(res_net.parameters(), lr=lr, momentum=0.9)
 
 rounds = 400 # default
 local_epochs = 1 # default
@@ -349,8 +347,8 @@ for r in range(rounds):  # loop over the dataset multiple times
  
     
     weights = recv_msg(s)
-    ecg_net.load_state_dict(weights)
-    ecg_net.eval()
+    res_net.load_state_dict(weights)
+    res_net.eval()
     for local_epoch in range(local_epochs):
         
         for i, data in enumerate(tqdm(train_loader, ncols=100, desc='Round '+str(r+1)+'_'+str(local_epoch+1))):
@@ -364,12 +362,12 @@ for r in range(rounds):  # loop over the dataset multiple times
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = ecg_net(inputs)
+            outputs = res_net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
 
-    msg = ecg_net.state_dict()
+    msg = res_net.state_dict()
     send_msg(s, msg)
 
 print('Finished Training')

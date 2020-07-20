@@ -1,24 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # CIFAR10 Federated Mobilenet Client Side
-# This code is the server part of CIFAR10 federated mobilenet for **multi** client and a server.
+# # CIFAR10 Split Mobilenet Client Side
+# This code is the server part of CIFAR10 split 2D-CNN model for **multi** client and a server.
 
-# In[3]:
+# In[4]:
 
 
 users = 1 # number of clients
 
 
-# In[4]:
+# ## Import required packages
+
+# In[5]:
 
 
 import os
-import h5py
-
-import socket
 import struct
+import socket
 import pickle
+import time
+
+import h5py
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -27,14 +31,8 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 
-from torch.utils.data import Dataset, DataLoader
 
-import time
-
-from tqdm import tqdm
-
-
-# In[2]:
+# In[ ]:
 
 
 def getFreeDescription():
@@ -75,35 +73,37 @@ def printPerformance():
     print(description[5] + " : " + mem[6])
 
 
-# In[3]:
+# In[ ]:
 
 
 printPerformance()
 
 
-# In[5]:
+# In[6]:
 
 
 root_path = '../../models/cifar10_data'
 
 
-# ## Cuda
-
-# In[6]:
-
-
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = "cpu"
-print(device)
-
+# ## SET CUDA
 
 # In[7]:
+
+
+# device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cpu"
+torch.manual_seed(777)
+if device =="cuda:0":
+    torch.cuda.manual_seed_all(777)
+
+
+# In[8]:
 
 
 client_order = int(input("client_order(start from 0): "))
 
 
-# In[8]:
+# In[9]:
 
 
 num_traindata = 50000 // users
@@ -111,7 +111,7 @@ num_traindata = 50000 // users
 
 # ## Data load
 
-# In[9]:
+# In[10]:
 
 
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
@@ -124,7 +124,7 @@ indices = list(range(50000))
 part_tr = indices[num_traindata * client_order : num_traindata * (client_order + 1)]
 
 
-# In[10]:
+# In[11]:
 
 
 trainset = torchvision.datasets.CIFAR10 (root=root_path, train=True, download=True, transform=transform)
@@ -137,45 +137,26 @@ testset = torchvision.datasets.CIFAR10 (root=root_path, train=False, download=Tr
 test_loader = torch.utils.data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
 
 
-# In[11]:
-
-
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-
-# ### Number of total batches
+# ### Size check
 
 # In[13]:
 
 
-train_total_batch = len(train_loader)
-print(train_total_batch)
-test_batch = len(test_loader)
-print(test_batch)
+x_train, y_train = next(iter(train_loader))
+print(x_train.size())
+print(y_train.size())
 
 
-# ## Pytorch layer modules for *Conv1D* Network
-# 
-# 
-# 
-# ### `Conv1d` layer
-# - `torch.nn.Conv1d(in_channels, out_channels, kernel_size)`
-# 
-# ### `MaxPool1d` layer
-# - `torch.nn.MaxPool1d(kernel_size, stride=None)`
-# - Parameter `stride` follows `kernel_size`.
-# 
-# ### `ReLU` layer
-# - `torch.nn.ReLU()`
-# 
-# ### `Linear` layer
-# - `torch.nn.Linear(in_features, out_features, bias=True)`
-# 
-# ### `Softmax` layer
-# - `torch.nn.Softmax(dim=None)`
-# - Parameter `dim` is usually set to `1`.
+# ### Total number of batches
 
 # In[14]:
+
+
+total_batch = len(train_loader)
+print(total_batch)
+
+
+# In[15]:
 
 
 # -*- coding: utf-8 -*-
@@ -188,14 +169,11 @@ import torch
 import torch.nn as nn
 
 
-def conv_dw(inplane,outplane,stride=1):
+def conv_dw_client(inplane,stride=1):
     return nn.Sequential(
         nn.Conv2d(inplane,inplane,kernel_size = 3,groups = inplane,stride=stride,padding=1),
         nn.BatchNorm2d(inplane),
-        nn.ReLU(),
-        nn.Conv2d(inplane,outplane,kernel_size = 1,groups = 1,stride=1),
-        nn.BatchNorm2d(outplane),
-        nn.ReLU()    
+        nn.ReLU()  
         )
 
 def conv_bw(inplane,outplane,kernel_size = 3,stride=1):
@@ -213,56 +191,66 @@ class MobileNet(nn.Module):
         
         layers = []
         layers.append(conv_bw(3,32,3,1))
-        layers.append(conv_dw(32,64,1))
-        layers.append(conv_dw(64,128,2))
-        layers.append(conv_dw(128,128,1))
-        layers.append(conv_dw(128,256,2))
-        layers.append(conv_dw(256,256,1))
-        layers.append(conv_dw(256,512,2))
+        layers.append(conv_dw_client(32,1))
+#         layers.append(conv_dw(64,128,2))
+#         layers.append(conv_dw(128,128,1))
+#         layers.append(conv_dw(128,256,2))
+#         layers.append(conv_dw(256,256,1))
+#         layers.append(conv_dw(256,512,2))
 
-        for i in range(5):
-            layers.append(conv_dw(512,512,1))
-        layers.append(conv_dw(512,1024,2))
-        layers.append(conv_dw(1024,1024,1))
+#         for i in range(5):
+#             layers.append(conv_dw(512,512,1))
+#         layers.append(conv_dw(512,1024,2))
+#         layers.append(conv_dw(1024,1024,1))
 
-        self.classifer = nn.Sequential(
-                nn.Dropout(0.5),
-                nn.Linear(1024,num_class)
-                )
+#         self.classifer = nn.Sequential(
+#                 nn.Dropout(0.5),
+#                 nn.Linear(1024,num_class)
+#                 )
         self.feature = nn.Sequential(*layers)
         
         
 
     def forward(self,x):
         out = self.feature(x)
-        out = out.mean(3).mean(2)
-        out = out.view(-1,1024)
-        out = self.classifer(out)
+#         out = out.mean(3).mean(2)
+#         out = out.view(-1,1024)
+#         out = self.classifer(out)
         return out
-
-
-# In[15]:
-
-
-mobile_net = MobileNet()
-mobile_net.to(device)
 
 
 # In[16]:
 
 
+mobilenet_client = MobileNet().to(device)
+print(mobilenet_client)
+
+
+# In[17]:
+
+
+# from torchsummary import summary
+
+# summary(mobilenet_client, (3, 32, 32))
+
+
+# ### Set other hyperparameters in the model
+# Hyperparameters here should be same with the server side.
+
+# In[18]:
+
+
+epoch = 20  # default
 lr = 0.001
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(mobile_net.parameters(), lr=lr, momentum=0.9)
-
-rounds = 400 # default
-local_epochs = 1 # default
+optimizer = optim.SGD(mobilenet_client.parameters(), lr=lr, momentum=0.9)
 
 
 # ## Socket initialization
+
 # ### Required socket functions
 
-# In[17]:
+# In[19]:
 
 
 def send_msg(sock, msg):
@@ -293,7 +281,7 @@ def recvall(sock, n):
     return data
 
 
-# In[15]:
+# In[ ]:
 
 
 printPerformance()
@@ -301,76 +289,65 @@ printPerformance()
 
 # ### Set host address and port number
 
-# In[18]:
+# In[20]:
 
 
 host = input("IP address: ")
 port = 10080
-max_recv = 100000
-
-
-# ### Open the client socket
-
-# In[19]:
-
-
-s = socket.socket()
-s.connect((host, port))
 
 
 # ## SET TIMER
 
-# In[20]:
+# In[21]:
 
 
 start_time = time.time()    # store start time
 print("timmer start!")
 
 
-# In[21]:
-
-
-msg = recv_msg(s)
-rounds = msg['rounds'] 
-client_id = msg['client_id']
-local_epochs = msg['local_epoch']
-send_msg(s, len(trainset_sub))
-
+# ### Open the client socket
 
 # In[22]:
 
 
-# update weights from server
-# train
-for r in range(rounds):  # loop over the dataset multiple times
+s = socket.socket()
+s.connect((host, port))
 
- 
-    
-    weights = recv_msg(s)
-    mobile_net.load_state_dict(weights)
-    mobile_net.eval()
-    for local_epoch in range(local_epochs):
+
+# In[23]:
+
+
+epoch = recv_msg(s)   # get epoch
+msg = total_batch
+send_msg(s, msg)   # send total_batch of train dataset
+
+
+# ## Real training process
+
+# In[24]:
+
+
+for e in range(epoch):
+    client_weights = recv_msg(s)
+    mobilenet_client.load_state_dict(client_weights)
+    mobilenet_client.eval()
+    for i, data in enumerate(tqdm(train_loader, ncols=100, desc='Epoch '+str(e+1))):
+        x, label = data
+        x = x.to(device)
+        label = label.to(device)
         
-        for i, data in enumerate(tqdm(train_loader, ncols=100, desc='Round '+str(r+1)+'_'+str(local_epoch+1))):
-            
-            # get the inputs; data is a list of [inputs, labels]
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.clone().detach().long().to(device)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = mobile_net(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-    msg = mobile_net.state_dict()
-    send_msg(s, msg)
-
-print('Finished Training')
+        optimizer.zero_grad()
+        output = mobilenet_client(x)
+        client_output = output.clone().detach().requires_grad_(True)
+        msg = {
+            'client_output': client_output,
+            'label': label
+        }
+        send_msg(s, msg)
+        client_grad = recv_msg(s)
+        output.backward(client_grad)
+        optimizer.step()
+    send_msg(s, mobilenet_client.state_dict())
 
 
 # In[ ]:
@@ -379,11 +356,11 @@ print('Finished Training')
 printPerformance()
 
 
-# In[23]:
+# In[25]:
 
 
 end_time = time.time()  #store end time
-print("Training Time: {} sec".format(end_time - start_time))
+print("WorkingTime of ",device ,": {} sec".format(end_time - start_time))
 
 
 # In[ ]:
