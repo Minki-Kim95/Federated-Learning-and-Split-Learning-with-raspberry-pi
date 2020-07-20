@@ -31,4 +31,18 @@ you need to use `~client.ipynb` file
 you need to use `~client_rasp.ipynb` or `~client_rasp.py` file
 If you run these files, you can see the temperature, memory usage of raspberry pie.
 
+## Overall process
+
+**set hyperparameters**
+- set variable `users`, in server and client file
+- set variable `rounds`, `local_epoch` or `epochs` of training
+
+**Running code**
+- Run the server code first
+- After run server, run the clients
+
+**input information**
+- if you run the server, you can see the printed **ip address** of server
+- when you run the client you need the enter **order of client** and **ip address**
+- if there is no problem, training will be started
   
