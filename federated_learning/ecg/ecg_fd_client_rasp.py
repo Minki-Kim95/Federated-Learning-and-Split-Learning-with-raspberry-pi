@@ -87,7 +87,7 @@ printPerformance()
 # In[2]:
 
 
-root_path = '../models/'
+root_path = '../../models/'
 
 
 # ## Cuda

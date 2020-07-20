@@ -33,7 +33,7 @@ from torch.optim import Adam
 # In[3]:
 
 
-root_path = '../models/'
+root_path = '../../models/'
 
 
 # In[ ]:
