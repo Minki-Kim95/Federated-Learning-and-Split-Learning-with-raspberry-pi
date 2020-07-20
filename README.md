@@ -4,6 +4,7 @@ SRDS 2020: End-to-End Evaluation of Federated Learning and Split Learning for In
 ## Helpful Link
 * [Experiment video](https://www.youtube.com/watch?v=x5mD1_EA2ps)
 * [Manual for installing pytorch on raspberry pie3](https://github.com/Minki-Kim95/Install-pytorch-on-RaspberryPi)
+* [Paper](https://arxiv.org/abs/2003.13376)
 
 ## Description
 This repository contains the implementations of various distributed machine learning models like Federated learning, split learning and ensemble learning
