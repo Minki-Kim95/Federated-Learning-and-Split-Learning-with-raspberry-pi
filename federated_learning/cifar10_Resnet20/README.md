@@ -1,2 +1,2 @@
 ## CIFAR 10 federated learning
-- Use mobilenet for training
+- Use resnet20 for training
