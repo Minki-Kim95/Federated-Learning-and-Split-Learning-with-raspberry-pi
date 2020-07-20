@@ -1,4 +1,4 @@
-# Federated-Learning-and-Split-Learning-with-raspberry-pie
+# Federated Learning and Split Learning with raspberry pie
 SRDS 2020: End-to-End Evaluation of Federated Learning and Split Learning for Internet of Things
 
 ## Helpful Link
