@@ -1,11 +1,16 @@
 # Federated Learning and Split Learning with raspberry pie
 This is for releasing the source code of the SRDS 2020 paper "End-to-End Evaluation of Federated Learning and Split Learning for Internet of Things".
+
 If you find it is useful and used for publication. Please kindly cite our work as:
 
 @inproceedings{gao2020end,
+
 title={End-to-End Evaluation of Federated Learning and Split Learning for Internet of Things},
+
 author={Gao, Yansong and Kim, Minki and Abuadbba, Sharif and Kim, Yeonjae and Thapa, Chandra and Kim, Kyuyeon and Camtepe, Seyit A and Kim, Hyoungshick and Nepal, Surya},
+
 booktitle={The 39th International Symposium on Reliable Distributed Systems (SRDS)},
+
 year={2020}}
 
 ## Helpful Link
