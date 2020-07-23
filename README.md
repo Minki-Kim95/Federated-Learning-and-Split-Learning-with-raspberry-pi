@@ -37,10 +37,10 @@ This repository contains the implementations of various distributed machine lear
   
 ## How to use
 
-### 1. run client on desktop
+### 1. Run client on desktop
 you need to use `~client.ipynb` file
 
-### 2. run client on raspberry pie
+### 2. Run client on raspberry pie
 you need to use `~client_rasp.ipynb` or `~client_rasp.py` file
 If you run these files, you can see the temperature, memory usage of raspberry pie.
 
