@@ -22,3 +22,5 @@ split_learning/cifar10_MobileNet/cifar10_sp_mobilenet_client.pth
 ensemble_learning/ecg/ecg_es_model0.pth
 ensemble_learning/ecg/ecg_es_model1.pth
 ensemble_learning/ecg/ecg_es_model2.pth
+
+hybrid/ecg/ecg_hy_model.pth
