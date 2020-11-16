@@ -15,6 +15,7 @@ year={2020}}
 * [Experiment video](https://www.youtube.com/watch?v=x5mD1_EA2ps)
 * [Manual for installing pytorch on raspberry pie3](https://github.com/Minki-Kim95/Install-pytorch-on-RaspberryPi)
 * [Paper](https://arxiv.org/abs/2003.13376)
+* [Presentation](https://www.youtube.com/watch?v=l55krlN4FLA&t=69s)
 
 ## Description
 This repository contains the implementations of various distributed machine learning models like Federated learning, split learning and ensemble learning
