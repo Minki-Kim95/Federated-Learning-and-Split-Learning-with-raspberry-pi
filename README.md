@@ -58,3 +58,5 @@ If you run these files, you can see the temperature, memory usage of raspberry p
 - when you run the client you need the enter **order of client** and **ip address**
 - if there is no problem, training will be started
   
+## Project members
+[Gao Yansong](https://github.com/garrisongys), [Kim Minki](https://github.com/Minki-Kim95), [Abuadbba Sharif](https://github.com/SharifAbuadbba), Kim Yeonjae, [Thapa Chandra](https://github.com/chandra2thapa), [Kim Kyuyeon](https://github.com/kyuyeonpooh), Camtepe Seyit A, [Kim Hyoungshick](https://github.com/hyoungshick), Nepal Surya
